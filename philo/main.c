@@ -6,7 +6,7 @@
 /*   By: jmayou <jmayou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/22 18:20:51 by jmayou            #+#    #+#             */
-/*   Updated: 2024/12/12 22:28:44 by jmayou           ###   ########.fr       */
+/*   Updated: 2024/12/12 22:44:15 by jmayou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -133,10 +133,10 @@ void    free_all(t_data *data)
     free(data->forks);
     free(data);
 }
-int    alloc(t_data *data)
+int    alloc(t_data **data)
 {
-    data = malloc(sizeof(t_data));
-    if(data == NULL)
+    (*data) = malloc(sizeof(t_data));
+    if((*data) == NULL)
     {
         printf("Error: Failed in allocate memory\n");
         return(1);
@@ -189,7 +189,7 @@ int main(int ac,char **av)
     t_data  *data;
     
     data = NULL;
-    if(alloc(data) == 1)
+    if(alloc(&data) == 1)
         return(1);
     if((ac == 5 || ac == 6) && check_error(av) == 0)
     {
