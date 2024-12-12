@@ -13,7 +13,7 @@ RM = rm -rf
 all : $(NAME)
 
 $(NAME) : $(OBJ) philo.h
-	$(CC) $(CFLAGS) $(OBJ) $(NAME)
+	$(CC) $(CFLAGS) $(OBJ) -o $(NAME)
 
 clean :
 	$(RM) $(OBJ)

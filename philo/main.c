@@ -6,7 +6,7 @@
 /*   By: jmayou <jmayou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/22 18:20:51 by jmayou            #+#    #+#             */
-/*   Updated: 2024/12/12 22:19:53 by jmayou           ###   ########.fr       */
+/*   Updated: 2024/12/12 22:28:44 by jmayou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -167,6 +167,7 @@ void    *sumilation(void *strct)
         else
             go_to_eat(philo);    
     }
+    return(NULL);
 }
 int    creat_thread_and_join(t_data *data)
 {
@@ -178,9 +179,10 @@ int    creat_thread_and_join(t_data *data)
     {
         if(pthread_create(&data->thread[i],NULL,sumilation,&data->philo[i]) != 0)
         {
-            
+            return(1);
         }
     }
+    return(0);
 }
 int main(int ac,char **av)
 {
