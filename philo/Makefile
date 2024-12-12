@@ -1,21 +1,19 @@
-NAME = philo.a
+NAME = philo
 
 CC = cc
 
 CFLAGS = -Wall -Wextra -Werror
 
-SRC = 
+SRC = main.c
 
 OBJ = $(SRC:.c=.o)
 
 RM = rm -rf 
 
-AR = ar -rc
-
 all : $(NAME)
 
 $(NAME) : $(OBJ) philo.h
-	$(AR) $(NAME) $(OBJ)
+	$(CC) $(CFLAGS) $(OBJ) $(NAME)
 
 clean :
 	$(RM) $(OBJ)

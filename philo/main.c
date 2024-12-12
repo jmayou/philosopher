@@ -6,7 +6,7 @@
 /*   By: jmayou <jmayou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/22 18:20:51 by jmayou            #+#    #+#             */
-/*   Updated: 2024/12/12 21:42:24 by jmayou           ###   ########.fr       */
+/*   Updated: 2024/12/12 22:19:53 by jmayou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,7 @@ int	check_error(char **str)
     i = 1;
     while(str[i])
     {
-        if(ft_atoi(str) <= 0)
+        if(ft_atoi(str[i]) <= 0)
             return(1);
         i++;
     }
@@ -186,18 +186,19 @@ int main(int ac,char **av)
 {
     t_data  *data;
     
-    if(alloc(&data) == 1);
+    data = NULL;
+    if(alloc(data) == 1)
         return(1);
     if((ac == 5 || ac == 6) && check_error(av) == 0)
     {
-        if(initializing(&data,ac,av) == 1)
+        if(initializing(data,ac,av) == 1)
             return(1);
-        if(init_mutex(&data) == 1)
+        if(init_mutex(data) == 1)
         {
-            free_all(&data);
+            free_all(data);
             return(1);
         }
-        if(creat_thread_and_join(&data) == 1);
+        if(creat_thread_and_join(data) == 1)
             return(1);
     }
     else

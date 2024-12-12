@@ -6,7 +6,7 @@
 /*   By: jmayou <jmayou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/24 11:33:53 by jmayou            #+#    #+#             */
-/*   Updated: 2024/12/12 21:44:02 by jmayou           ###   ########.fr       */
+/*   Updated: 2024/12/12 22:17:33 by jmayou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,6 +55,6 @@ typedef struct s_data
 }   t_data;
 
 
-
+int	ft_atoi(const char *str);
 
 #endif
