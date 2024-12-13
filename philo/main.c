@@ -6,7 +6,7 @@
 /*   By: jmayou <jmayou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/22 18:20:51 by jmayou            #+#    #+#             */
-/*   Updated: 2024/12/13 12:47:52 by jmayou           ###   ########.fr       */
+/*   Updated: 2024/12/13 18:49:49 by jmayou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,6 +48,13 @@ int allocation(t_data *data,int i)
         printf("Error: Failed in allocate memory\n");
         return(1);
     }
+    
+     data->is_full= malloc(sizeof(int));
+    if(data->is_full == NULL)
+    {
+        printf("Error: Failed in allocate memory\n");
+        return(1);
+    }
     data->philo = malloc(sizeof(t_philo) * i);
     if(data->philo == NULL)
     {
@@ -77,7 +84,8 @@ int    initializing(t_data *data,int ac,char **av)
     j = 0;
     if(allocation(data,i) == 1)
         return(1);
-    data->is_error = 0;
+    *data->is_error = -1;
+    *data->is_full = -1;
     while(i > 0)
     {
         data->philo[j].data = data;
@@ -111,6 +119,11 @@ int init_mutex(t_data   *data)
         }
         i++;
     }
+    if(pthread_mutex_init(&data->mutex_for_error, NULL) != 0 || pthread_mutex_init(&data->mutex_for_print, NULL) != 0 || pthread_mutex_init(&data->mutex_for_time, NULL) != 0)
+    {
+        printf("Error: Failed in pthread_mutex_init\n");
+        return(1);
+    }
     return(0);
 }
 
@@ -122,51 +135,54 @@ void    free_all(t_data *data)
     free(data->forks);
     free(data);
 }
-long    get_the_time(void)
+long    get_the_time(int i)
 {
     struct timeval tv;
-    
-    if(gettimeofday(&tv,NULL) == 0)
+        
+    gettimeofday(&tv,NULL);
+    if(i == 0)
         return (tv.tv_sec * 1000 + tv.tv_usec / 1000);
     else
-        return(-1);
+        return (tv.tv_sec * 1000000 + tv.tv_usec);
+        
 }
 int check_is_error(t_philo  *philo)
 {
+    int i;
+    long time;
+
+    i = 0;
+    time = get_the_time(0);  
     if((*philo->data->is_full) == philo->args.nbr_of_philo * philo->args.max_of_meals)
-    {
-        pthread_mutex_lock(&philo->data->mutex_for_print);
-        printf("Philosophers are full\n");
-        pthread_mutex_unlock(&philo->data->mutex_for_print);
         return(1);
-    }
-    else if((*philo->data->is_error) == DIED)
-    {
-        pthread_mutex_lock(&philo->data->mutex_for_print);
-        printf("%d deid\n",philo->id + 1);
-        pthread_mutex_unlock(&philo->data->mutex_for_print);
-        return(1);
-    }
+    else if ((time - philo->time_of_last_meals) >= philo->args.time_to_die \
+	&& philo->time_of_last_meals != 0)
+	{
+		pthread_mutex_lock(&philo->data->mutex_for_time);
+		*philo->data->is_error = philo->id + 1;
+		pthread_mutex_unlock(&philo->data->mutex_for_time);
+		return (1);
+	}
     return(0);
 }
 void    go_to_sleep(t_philo *philo)
 {
     long time;
 
-    time = get_the_time();
-    while(get_the_time() - time < philo->args.time_to_sleep)
+    time = get_the_time(1);
+    while(get_the_time(1) - time < philo->args.time_to_sleep * 1000)
     {
         usleep(50);
-        if(check_is_error(philo) == 1)
+       if(check_is_error(philo) == 1)
             break;
     }
 }
-void    sleep_while_eating(t_philo *philo)
+void    sleep_while_eating(t_philo *philo,int n)
 {
     long time;
 
-    time = get_the_time();
-    while(get_the_time() - time < philo->args.time_to_eat)
+    time = get_the_time(1);
+    while(get_the_time(1) - time < n * 1000)
     {
         usleep(50);
         if(check_is_error(philo) == 1)
@@ -176,12 +192,12 @@ void    sleep_while_eating(t_philo *philo)
 void    print_message(char *str,t_philo *philo)
 {
     pthread_mutex_lock(&philo->data->mutex_for_print);
-    printf("%ld %d %s\n",get_the_time() - philo->data->time_start,philo->id + 1,str);
+    printf("%ld %d %s",get_the_time(0) - philo->data->time_start,philo->id + 1,str);
     pthread_mutex_unlock(&philo->data->mutex_for_print);
 }
 void    go_to_eat(t_philo *philo)
 {
-    philo->time_of_last_meals = get_the_time();
+    philo->time_of_last_meals = get_the_time(0);
     while(check_is_error(philo) == 0)
     {
         print_message("is thinking\n",philo);
@@ -190,7 +206,8 @@ void    go_to_eat(t_philo *philo)
         pthread_mutex_lock(philo->right_fork);
         print_message("has taken a fork\n",philo);
         print_message("is eating\n",philo);
-        sleep_while_eating(philo);
+        (*philo->data->is_full) += 1 ; 
+        sleep_while_eating(philo,philo->args.time_to_eat);
         pthread_mutex_unlock(philo->left_fork);
         pthread_mutex_unlock(philo->right_fork);
     }
@@ -199,49 +216,71 @@ void    *one_philo(t_philo   *philo)
 {
     pthread_mutex_lock(philo->left_fork);
     print_message("has taken a fork\n",philo);
-    printf("%d deid\n",philo->id + 1);
+    print_message("is thinking\n",philo);
+    sleep_while_eating(philo,philo->args.time_to_die);
+    print_message("is died\n",philo);
     pthread_mutex_unlock(philo->left_fork);
     return(NULL);
 }
 void    *sumilation(void *strct)
 {
+
     t_philo *philo;
     philo = (t_philo *)strct;
-    philo->time_of_last_meals = get_the_time();
+    philo->time_of_last_meals = get_the_time(0);
     if(philo->args.nbr_of_philo == 1)
         return(one_philo(philo));
-    else
+    while(check_is_error(philo) == 0)
     {
-        if(philo->args.nbr_of_philo % 2 == 0)
+        if(philo->id + 1 % 2 == 0)
+        {
+            print_message(" is sleeping\n",philo);
             go_to_sleep(philo);
+        }
         else
             go_to_eat(philo);    
     }
     return(NULL);
+}
+void    observer(t_data *data)
+{
+    if((*data->is_full) == data->philo->args.nbr_of_philo * data->philo->args.max_of_meals)
+    {
+        pthread_mutex_lock(&data->mutex_for_print);
+        printf("Philosophers are full\n");
+        pthread_mutex_unlock(&data->mutex_for_print);
+    }
+    else if((*data->is_error) != -1)
+    {
+        pthread_mutex_lock(&data->mutex_for_print);
+        printf("%ld %d is deid\n",get_the_time(0) - data->time_start,(*data->is_error));
+        pthread_mutex_unlock(&data->mutex_for_print);
+    }
 }
 int    creat_thread_and_join(t_data *data)
 {
     int i;
 
     i = 0;
-    data->time_start = get_the_time();
-    while(i < data->philo[i].args.nbr_of_philo)
-    {
+    data->time_start = get_the_time(0);
+    while(i < data->philo[0].args.nbr_of_philo)
+    {   
         if(pthread_create(&data->thread[i],NULL,sumilation,&data->philo[i]) != 0)
         {
-            return(1);//
+            return(1); //is error 
         }
         i++;
     }
     i = 0;
-    while(i < data->philo[i].args.nbr_of_philo)
+    while(i < data->philo[0].args.nbr_of_philo)
     {
         if(pthread_join(data->thread[i],NULL) != 0)
         {
-            return(1);//
+            return(1); // is error
         }
         i++;
     }
+    observer(data);
     return(0);
 }
 int main(int ac,char **av)
@@ -257,6 +296,7 @@ int main(int ac,char **av)
             return(1);
         if(init_mutex(data) == 1)
         {
+            //des
             free_all(data);
             return(1);
         }
@@ -265,6 +305,7 @@ int main(int ac,char **av)
     }
     else
     {
+        free(data);
         printf("Error : Invalid arguments.\n");
         return(1);
     }

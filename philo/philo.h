@@ -6,7 +6,7 @@
 /*   By: jmayou <jmayou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/24 11:33:53 by jmayou            #+#    #+#             */
-/*   Updated: 2024/12/13 12:35:21 by jmayou           ###   ########.fr       */
+/*   Updated: 2024/12/13 18:28:36 by jmayou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,6 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-# define DIED 1
 typedef struct s_data	t_data;
 
 typedef struct s_args
