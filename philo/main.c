@@ -6,7 +6,7 @@
 /*   By: jmayou <jmayou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/22 18:20:51 by jmayou            #+#    #+#             */
-/*   Updated: 2024/12/12 22:50:25 by jmayou           ###   ########.fr       */
+/*   Updated: 2024/12/13 12:47:52 by jmayou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,6 +80,7 @@ int    initializing(t_data *data,int ac,char **av)
     data->is_error = 0;
     while(i > 0)
     {
+        data->philo[j].data = data;
         data->philo[j].id = j;
         data->philo[j].args.max_of_meals = -1;
         data->philo[j].args.nbr_of_philo = ft_atoi(av[1]);
@@ -113,18 +114,6 @@ int init_mutex(t_data   *data)
     return(0);
 }
 
-void    print(t_data    *data,int n)
-{
-    pthread_mutex_lock(&data->mutex_for_print);
-    if(n == DIED)
-        printf("");
-    else if(n == FULL)
-        printf("");
-    else if(n == ERROR)
-        printf("");
-    pthread_mutex_unlock(&data->mutex_for_print);
-}
-
 void    free_all(t_data *data)
 {
     free(data->is_error);
@@ -142,7 +131,78 @@ long    get_the_time(void)
     else
         return(-1);
 }
+int check_is_error(t_philo  *philo)
+{
+    if((*philo->data->is_full) == philo->args.nbr_of_philo * philo->args.max_of_meals)
+    {
+        pthread_mutex_lock(&philo->data->mutex_for_print);
+        printf("Philosophers are full\n");
+        pthread_mutex_unlock(&philo->data->mutex_for_print);
+        return(1);
+    }
+    else if((*philo->data->is_error) == DIED)
+    {
+        pthread_mutex_lock(&philo->data->mutex_for_print);
+        printf("%d deid\n",philo->id + 1);
+        pthread_mutex_unlock(&philo->data->mutex_for_print);
+        return(1);
+    }
+    return(0);
+}
+void    go_to_sleep(t_philo *philo)
+{
+    long time;
 
+    time = get_the_time();
+    while(get_the_time() - time < philo->args.time_to_sleep)
+    {
+        usleep(50);
+        if(check_is_error(philo) == 1)
+            break;
+    }
+}
+void    sleep_while_eating(t_philo *philo)
+{
+    long time;
+
+    time = get_the_time();
+    while(get_the_time() - time < philo->args.time_to_eat)
+    {
+        usleep(50);
+        if(check_is_error(philo) == 1)
+            break;
+    }
+}
+void    print_message(char *str,t_philo *philo)
+{
+    pthread_mutex_lock(&philo->data->mutex_for_print);
+    printf("%ld %d %s\n",get_the_time() - philo->data->time_start,philo->id + 1,str);
+    pthread_mutex_unlock(&philo->data->mutex_for_print);
+}
+void    go_to_eat(t_philo *philo)
+{
+    philo->time_of_last_meals = get_the_time();
+    while(check_is_error(philo) == 0)
+    {
+        print_message("is thinking\n",philo);
+        pthread_mutex_lock(philo->left_fork);
+        print_message("has taken a fork\n",philo);
+        pthread_mutex_lock(philo->right_fork);
+        print_message("has taken a fork\n",philo);
+        print_message("is eating\n",philo);
+        sleep_while_eating(philo);
+        pthread_mutex_unlock(philo->left_fork);
+        pthread_mutex_unlock(philo->right_fork);
+    }
+}
+void    *one_philo(t_philo   *philo)
+{
+    pthread_mutex_lock(philo->left_fork);
+    print_message("has taken a fork\n",philo);
+    printf("%d deid\n",philo->id + 1);
+    pthread_mutex_unlock(philo->left_fork);
+    return(NULL);
+}
 void    *sumilation(void *strct)
 {
     t_philo *philo;
@@ -169,8 +229,18 @@ int    creat_thread_and_join(t_data *data)
     {
         if(pthread_create(&data->thread[i],NULL,sumilation,&data->philo[i]) != 0)
         {
-            return(1);
+            return(1);//
         }
+        i++;
+    }
+    i = 0;
+    while(i < data->philo[i].args.nbr_of_philo)
+    {
+        if(pthread_join(data->thread[i],NULL) != 0)
+        {
+            return(1);//
+        }
+        i++;
     }
     return(0);
 }
