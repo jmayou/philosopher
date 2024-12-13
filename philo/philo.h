@@ -6,7 +6,7 @@
 /*   By: jmayou <jmayou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/24 11:33:53 by jmayou            #+#    #+#             */
-/*   Updated: 2024/12/13 18:28:36 by jmayou           ###   ########.fr       */
+/*   Updated: 2024/12/13 22:04:55 by jmayou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,9 +24,9 @@ typedef struct s_data	t_data;
 typedef struct s_args
 {
     int				nbr_of_philo;
-	int				time_to_eat;
-	int				time_to_die;
-	int				time_to_sleep;
+	long				time_to_eat;
+	long				time_to_die;
+	long				time_to_sleep;
     int				max_of_meals;
 }   t_args;
 

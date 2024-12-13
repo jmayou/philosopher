@@ -6,7 +6,7 @@
 /*   By: jmayou <jmayou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/22 18:20:51 by jmayou            #+#    #+#             */
-/*   Updated: 2024/12/13 20:55:15 by jmayou           ###   ########.fr       */
+/*   Updated: 2024/12/13 22:34:31 by jmayou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,35 +44,19 @@ int allocation(t_data *data,int i)
 {
     data->is_error = malloc(sizeof(int));
     if(data->is_error == NULL)
-    {
-        printf("Error: Failed in allocate memory\n");
-        return(1);
-    }
-    
-     data->is_full= malloc(sizeof(int));
+        return (printf("Error: Failed to allocate memory\n"), 1);
+    data->is_full= malloc(sizeof(int));
     if(data->is_full == NULL)
-    {
-        printf("Error: Failed in allocate memory\n");
-        return(1);
-    }
+        return (printf("Error: Failed to allocate memory\n"), free(data->is_error), 1);
     data->philo = malloc(sizeof(t_philo) * i);
     if(data->philo == NULL)
-    {
-        printf("Error: Failed in allocate memory\n");
-        return(free(data->is_error),1);
-    }
+		return (printf("Error: Failed to allocate memory\n"), free(data->is_error), free(data->is_full), 1);
     data->thread = malloc(sizeof(pthread_t) * i);
-    if(data->philo == NULL)
-    {
-        printf("Error: Failed in allocate memory\n");
-        return(free(data->philo),free(data->is_error),1);
-    }
+    if(data->thread == NULL)
+        return (printf("Error: Failed to allocate memory\n"), free(data->is_error), free(data->is_full),free(data->philo), 1);
     data->forks = malloc(sizeof(pthread_mutex_t) * i);
-    if(data->philo == NULL)
-    {
-        printf("Error: Failed in allocate memory\n");
-        return(free(data->is_error),free(data->thread),free(data->philo),1);
-    }
+    if(data->forks == NULL)
+        return (printf("Error: Failed to allocate memory\n"), free(data->is_error), free(data->is_full),free(data->philo),free(data->thread), 1);
     return(0);
 }
 int    initializing(t_data *data,int ac,char **av)
@@ -115,13 +99,24 @@ int init_mutex(t_data   *data)
         if(pthread_mutex_init(&data->forks[i], NULL) != 0)
         {
             printf("Error: Failed in pthread_mutex_init\n");
+            while(i >= 0)
+                pthread_mutex_destroy(&data->forks[i]);
             return(1);
         }
         i++;
     }
-    if(pthread_mutex_init(&data->mutex_for_error, NULL) != 0 || pthread_mutex_init(&data->mutex_for_print, NULL) != 0 || pthread_mutex_init(&data->mutex_for_time, NULL) != 0)
+    if(pthread_mutex_init(&data->mutex_for_error, NULL) != 0 ||
+       pthread_mutex_init(&data->mutex_for_print, NULL) != 0 ||
+       pthread_mutex_init(&data->mutex_for_time, NULL) != 0)
     {
         printf("Error: Failed in pthread_mutex_init\n");
+        if(pthread_mutex_init(&data->mutex_for_print, NULL) != 0)
+            pthread_mutex_destroy(&data->mutex_for_error);
+        if(pthread_mutex_init(&data->mutex_for_time, NULL) != 0)
+        {
+            pthread_mutex_destroy(&data->mutex_for_error);
+            pthread_mutex_destroy(&data->mutex_for_print);
+        }
         return(1);
     }
     return(0);
@@ -129,6 +124,17 @@ int init_mutex(t_data   *data)
 
 void    free_all(t_data *data)
 {
+    int i;
+
+    i = 0;
+    while(i < data->philo[0].args.nbr_of_philo)
+    {
+        pthread_mutex_destroy(&data->forks[i]);
+        i++;
+    }
+    pthread_mutex_destroy(&data->mutex_for_error);
+	pthread_mutex_destroy(&data->mutex_for_print);
+	pthread_mutex_destroy(&data->mutex_for_time);
     free(data->is_error);
     free(data->thread);
     free(data->philo);
@@ -157,16 +163,15 @@ int check_is_error(t_philo  *philo)
         pthread_mutex_unlock(&philo->data->mutex_for_error); 
         return(1);
     }
-    else if ((time - philo->time_of_last_meals) >= philo->args.time_to_die \
+    pthread_mutex_unlock(&philo->data->mutex_for_error);
+    if ((time - philo->time_of_last_meals) >= philo->args.time_to_die \
 	&& philo->time_of_last_meals != 0)
 	{
-        pthread_mutex_unlock(&philo->data->mutex_for_error);
 		pthread_mutex_lock(&philo->data->mutex_for_time);
 		*philo->data->is_error = philo->id + 1;
 		pthread_mutex_unlock(&philo->data->mutex_for_time);
 		return (1);
 	}
-    pthread_mutex_unlock(&philo->data->mutex_for_error);
     return(0);
 }
 void    go_to_sleep(t_philo *philo)
@@ -243,57 +248,68 @@ void    *sumilation(void *strct)
     philo->time_of_last_meals = get_the_time(0);
     if(philo->args.nbr_of_philo == 1)
         return(one_philo(philo));
+    if(philo->id  % 2 == 0)
+    {
+        print_message(" is sleeping\n",philo);
+        go_to_sleep(philo);
+    }
     while(check_is_error(philo) == 0)
     {
-        if(philo->id + 1 % 2 == 0)
-        {
-            print_message(" is sleeping\n",philo);
-            go_to_sleep(philo);
-        }
-        else
-            go_to_eat(philo);    
+        go_to_eat(philo);    
     }
     return(NULL);
 }
-void    observer(t_data *data)
+void *observer(void *arg)
 {
-    if((*data->is_full) == data->philo->args.nbr_of_philo * data->philo->args.max_of_meals)
+    t_data *data;
+
+    data = (t_data *)arg;
+    while (1)
     {
-        pthread_mutex_lock(&data->mutex_for_print);
-        printf("Philosophers are full\n");
-        pthread_mutex_unlock(&data->mutex_for_print);
-    }
-    else if((*data->is_error) != -1)
-    {
-        pthread_mutex_lock(&data->mutex_for_print);
-        printf("%ld %d is deid\n",get_the_time(0) - data->time_start,(*data->is_error));
-        pthread_mutex_unlock(&data->mutex_for_print);
+		pthread_mutex_lock(&data->mutex_for_error);
+		if (*data->is_error != -1)
+		{
+			pthread_mutex_unlock(&data->mutex_for_error);
+			pthread_mutex_lock(&data->mutex_for_print);
+			printf("%ld %d is dead\n", get_the_time(0) - data->time_start, *data->is_error);
+			pthread_mutex_unlock(&data->mutex_for_print);
+			return (NULL);
+		}
+		if (*data->is_full == data->philo->args.nbr_of_philo * data->philo->args.max_of_meals)
+		{
+			pthread_mutex_unlock(&data->mutex_for_error);
+			pthread_mutex_lock(&data->mutex_for_print);
+			printf("Philosophers are full\n");
+			pthread_mutex_unlock(&data->mutex_for_print);
+			return (NULL);
+		}
+		pthread_mutex_unlock(&data->mutex_for_error);
+        usleep(50);
     }
 }
 int    creat_thread_and_join(t_data *data)
 {
     int i;
+    pthread_t observer_thread;
 
     i = 0;
     data->time_start = get_the_time(0);
     while(i < data->philo[0].args.nbr_of_philo)
     {   
         if(pthread_create(&data->thread[i],NULL,sumilation,&data->philo[i]) != 0)
-        {
             return(1); //is error 
-        }
         i++;
     }
+    if (pthread_create(&observer_thread, NULL, observer, data) != 0)
+		return (1);
     i = 0;
     while(i < data->philo[0].args.nbr_of_philo)
     {
         if(pthread_join(data->thread[i],NULL) != 0)
-        {
-            return(1); // is error
-        }
+            return(1);
         i++;
     }
-    observer(data);
+    pthread_join(observer_thread, NULL);
     return(0);
 }
 int main(int ac,char **av)
@@ -309,12 +325,14 @@ int main(int ac,char **av)
             return(1);
         if(init_mutex(data) == 1)
         {
-            //des
             free_all(data);
             return(1);
         }
         if(creat_thread_and_join(data) == 1)
-            return(1);
+        {
+			free_all(data);
+			return (1);
+		}
     }
     else
     {
@@ -322,5 +340,6 @@ int main(int ac,char **av)
         printf("Error : Invalid arguments.\n");
         return(1);
     }
+    free_all(data);
     return(0);
 }
