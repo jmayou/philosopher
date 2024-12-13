@@ -6,7 +6,7 @@
 /*   By: jmayou <jmayou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/22 18:20:51 by jmayou            #+#    #+#             */
-/*   Updated: 2024/12/13 18:49:49 by jmayou           ###   ########.fr       */
+/*   Updated: 2024/12/13 20:55:15 by jmayou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -148,21 +148,25 @@ long    get_the_time(int i)
 }
 int check_is_error(t_philo  *philo)
 {
-    int i;
     long time;
 
-    i = 0;
-    time = get_the_time(0);  
+    time = get_the_time(0); 
+    pthread_mutex_lock(&philo->data->mutex_for_error);
     if((*philo->data->is_full) == philo->args.nbr_of_philo * philo->args.max_of_meals)
+    {
+        pthread_mutex_unlock(&philo->data->mutex_for_error); 
         return(1);
+    }
     else if ((time - philo->time_of_last_meals) >= philo->args.time_to_die \
 	&& philo->time_of_last_meals != 0)
 	{
+        pthread_mutex_unlock(&philo->data->mutex_for_error);
 		pthread_mutex_lock(&philo->data->mutex_for_time);
 		*philo->data->is_error = philo->id + 1;
 		pthread_mutex_unlock(&philo->data->mutex_for_time);
 		return (1);
 	}
+    pthread_mutex_unlock(&philo->data->mutex_for_error);
     return(0);
 }
 void    go_to_sleep(t_philo *philo)
@@ -198,19 +202,28 @@ void    print_message(char *str,t_philo *philo)
 void    go_to_eat(t_philo *philo)
 {
     philo->time_of_last_meals = get_the_time(0);
-    while(check_is_error(philo) == 0)
+    print_message("is thinking\n",philo);
+    if(philo->id == 0)
     {
-        print_message("is thinking\n",philo);
+        pthread_mutex_lock(philo->right_fork);
+        print_message("has taken a fork\n",philo);
+        pthread_mutex_lock(philo->left_fork);
+        print_message("has taken a fork\n",philo);
+    }
+    else
+    {
         pthread_mutex_lock(philo->left_fork);
         print_message("has taken a fork\n",philo);
         pthread_mutex_lock(philo->right_fork);
         print_message("has taken a fork\n",philo);
-        print_message("is eating\n",philo);
-        (*philo->data->is_full) += 1 ; 
-        sleep_while_eating(philo,philo->args.time_to_eat);
-        pthread_mutex_unlock(philo->left_fork);
-        pthread_mutex_unlock(philo->right_fork);
     }
+    print_message("is eating\n",philo);
+    pthread_mutex_lock(&philo->data->mutex_for_error);
+    (*philo->data->is_full) += 1 ; 
+    pthread_mutex_unlock(&philo->data->mutex_for_error);
+    sleep_while_eating(philo,philo->args.time_to_eat);
+    pthread_mutex_unlock(philo->left_fork);
+    pthread_mutex_unlock(philo->right_fork); 
 }
 void    *one_philo(t_philo   *philo)
 {
