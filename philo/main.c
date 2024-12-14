@@ -6,7 +6,7 @@
 /*   By: jmayou <jmayou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/22 18:20:51 by jmayou            #+#    #+#             */
-/*   Updated: 2024/12/14 12:03:43 by jmayou           ###   ########.fr       */
+/*   Updated: 2024/12/14 13:07:59 by jmayou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -246,7 +246,9 @@ void    *sumilation(void *strct)
     }
     while(check_is_error(philo) == 0)
     {
-        go_to_eat(philo);    
+        go_to_eat(philo); 
+        print_message(" is sleeping\n",philo);
+        go_to_sleep(philo);   
     }
     return(NULL);
 }
@@ -254,15 +256,9 @@ void    observer(t_data *data)
 {
     pthread_mutex_lock(&data->mutex_for_data);
     if(data->philo->args.max_of_meals != -1 && (*data->is_full) >= data->philo->args.nbr_of_philo * data->philo->args.max_of_meals)
-    {
         printf("Philosophers are full\n");
-        pthread_mutex_unlock(&data->mutex_for_data);
-    }
     else if((*data->is_error) != -1)
-    {
         printf("%ld %d is deid\n",get_the_time(0) - data->time_start,(*data->is_error));
-        pthread_mutex_unlock(&data->mutex_for_data);
-    }
     pthread_mutex_unlock(&data->mutex_for_data);
 }
 
