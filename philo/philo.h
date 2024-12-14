@@ -6,7 +6,7 @@
 /*   By: jmayou <jmayou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/24 11:33:53 by jmayou            #+#    #+#             */
-/*   Updated: 2024/12/13 22:04:55 by jmayou           ###   ########.fr       */
+/*   Updated: 2024/12/14 11:11:23 by jmayou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,9 +48,7 @@ typedef struct s_data
     t_philo *philo;
     pthread_mutex_t *forks;
     pthread_t		*thread;
-    pthread_mutex_t mutex_for_print;
-    pthread_mutex_t mutex_for_error;
-    pthread_mutex_t mutex_for_time;
+    pthread_mutex_t mutex_for_data;
 }   t_data;
 
 int	ft_atoi(const char *str);
