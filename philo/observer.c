@@ -6,7 +6,7 @@
 /*   By: jmayou <jmayou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/12/14 19:26:54 by jmayou            #+#    #+#             */
-/*   Updated: 2024/12/14 19:42:05 by jmayou           ###   ########.fr       */
+/*   Updated: 2024/12/15 11:32:00 by jmayou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,4 +47,20 @@ void	observer(t_data *data)
 		printf("%ld %d is deid\n", get_the_time(0) - data->time_start,
 			(*data->is_error));
 	pthread_mutex_unlock(&data->mutex_for_data);
+}
+
+void	cop(t_data *data)
+{
+	int	i;
+
+	i = 0;
+	usleep(10000);
+	while (1)
+	{
+		if (check_is_error(&data->philo[i]) == 1)
+			break ;
+		i = (i + 1) % data->philo[0].args.nbr_of_philo;
+		if (i == 0)
+			usleep(1000);
+	}
 }

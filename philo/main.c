@@ -6,17 +6,12 @@
 /*   By: jmayou <jmayou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/22 18:20:51 by jmayou            #+#    #+#             */
-/*   Updated: 2024/12/14 19:49:17 by jmayou           ###   ########.fr       */
+/*   Updated: 2024/12/15 11:56:12 by jmayou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philo.h"
 
-// void	leaks(void)
-// {
-// 	system("leaks philo");
-// }
-//	atexit(leaks);
 int	check_error(char **str)
 {
 	int	i;
@@ -68,6 +63,7 @@ int	creat_thread_and_join(t_data *data)
 			return (1);
 		i++;
 	}
+	cop(data);
 	i = 0;
 	while (i < data->philo[0].args.nbr_of_philo)
 	{

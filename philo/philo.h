@@ -6,7 +6,7 @@
 /*   By: jmayou <jmayou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/24 11:33:53 by jmayou            #+#    #+#             */
-/*   Updated: 2024/12/14 19:49:44 by jmayou           ###   ########.fr       */
+/*   Updated: 2024/12/15 11:21:53 by jmayou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,5 +65,5 @@ void					go_to_eat(t_philo *philo);
 void					*one_philo(t_philo *philo);
 void					*sumilation(void *strct);
 void					free_all(t_data *data);
-
+void					cop(t_data *data);
 #endif

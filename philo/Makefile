@@ -2,7 +2,8 @@ NAME = philo
 
 CC = cc
 
-CFLAGS = -Wall -Wextra -Werror
+CFLAGS = -Wall -Wextra -Werror 
+
 
 SRC = main.c utils.c observer.c routine.c time.c
 
